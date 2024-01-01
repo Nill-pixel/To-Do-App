@@ -21,11 +21,14 @@ import com.example.todolist.Model.TodoModel;
 import com.example.todolist.Utils.DatabaseHandler;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
-public class AddNewTask extends BottomSheetDialogFragment {
-    public static final String TAG = "ActionBottomDialog";
+import java.util.Objects;
 
+public class AddNewTask extends BottomSheetDialogFragment {
+
+    public static final String TAG = "ActionBottomDialog";
     private EditText newTaskText;
     private Button newTaskSaveButton;
+
     private DatabaseHandler db;
 
     public static AddNewTask newInstance(){
@@ -40,75 +43,81 @@ public class AddNewTask extends BottomSheetDialogFragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-       View view = inflater.inflate(R.layout.new_task, container, false);
-       getDialog().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-       return view;
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+
+        View view = inflater.inflate(R.layout.new_task, container, false);
+        getDialog().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
+        return view;
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        newTaskText = getView().findViewById(R.id.newTaskText);
-        newTaskSaveButton = getView().findViewById(R.id.newTaskButton);
-
-        db = new DatabaseHandler(getActivity());
-        db.openDatabase();
+        newTaskText = requireView().findViewById(R.id.newTaskText);
+        newTaskSaveButton = requireView().findViewById(R.id.newTaskButton);
 
         boolean isUpdate = false;
+
         final Bundle bundle = getArguments();
         if(bundle != null){
             isUpdate = true;
             String task = bundle.getString("task");
             newTaskText.setText(task);
-            if(task.length()>0){
-                newTaskSaveButton.setTextColor(ContextCompat.getColor(getContext(), R.color.colorPrimaryDark));
-            }
-            newTaskText.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    if(s.toString().equals("")){
-                        newTaskSaveButton.setEnabled(false);
-                        newTaskSaveButton.setTextColor(Color.GRAY);
-                    }else{
-                        newTaskSaveButton.setEnabled(true);
-                        newTaskSaveButton.setTextColor(ContextCompat.getColor(getContext(), R.color.colorPrimaryDark));
-                    }
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
-
-                }
-            });
-            final boolean finalIsUpdate = isUpdate;
-            newTaskSaveButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    String text = newTaskText.getText().toString();
-                    if(finalIsUpdate){
-                        db.updateTask(bundle.getInt("id"), text);
-                    }else {
-                        TodoModel task = new TodoModel();
-                        task.setTask(text);
-                        task.setStatus(0);
-                    }
-                    dismiss();
-                }
-            });
+            assert task != null;
+            if(task.length()>0)
+                newTaskSaveButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryDark));
         }
+
+        db = new DatabaseHandler(getActivity());
+        db.openDatabase();
+
+        newTaskText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if(s.toString().equals("")){
+                    newTaskSaveButton.setEnabled(false);
+                    newTaskSaveButton.setTextColor(Color.GRAY);
+                }
+                else{
+                    newTaskSaveButton.setEnabled(true);
+                    newTaskSaveButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryDark));
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+        final boolean finalIsUpdate = isUpdate;
+        newTaskSaveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String text = newTaskText.getText().toString();
+                if(finalIsUpdate){
+                    db.updateTask(bundle.getInt("id"), text);
+                }
+                else {
+                    TodoModel task = new TodoModel();
+                    task.setTask(text);
+                    task.setStatus(0);
+                    db.insertTask(task);
+                }
+                dismiss();
+            }
+        });
     }
 
     @Override
-    public void onDismiss(@NonNull DialogInterface dialog) {
+    public void onDismiss(@NonNull DialogInterface dialog){
         Activity activity = getActivity();
-        if(activity instanceof DialogCloseListener){
+        if(activity instanceof DialogCloseListener)
             ((DialogCloseListener)activity).handleDialogClose(dialog);
-        }
     }
 }
